@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide: ML Data Preparation with BigQuery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Oceanic Slate (based on slate, teal, and gold for calm, professional contrast) -->
+    <!-- Application Structure Plan: A narrative, thematic flow is used instead of a linear lab structure to prioritize conceptual understanding. It starts with the high-level "Mission," presents the "Data Pipeline" as a visual flowchart, dives into interactive "Core Concepts" (Feature Engineering, Reproducibility, Verification) using cards and charts, and ends with key takeaways. This structure guides the user from the 'what' to the 'how' and finally to the 'why,' which is more effective for learning than a simple procedural list. -->
+    <!-- Visualization & Content Choices:
+        - Process Flow: Goal(Organize) -> HTML/CSS Diagram -> Justification(Provides a clear mental map of the entire lab process) -> Method(Styled divs and Unicode arrows).
+        - Feature Engineering: Goal(Compare) -> HTML "Before/After" Layout -> Justification(Directly contrasts raw vs. engineered data for clarity) -> Method(Styled divs).
+        - Reproducibility: Goal(Compare) -> HTML Side-by-Side Layout -> Justification(The most effective way to highlight the critical difference between deterministic and non-deterministic functions) -> Method(Styled divs with Unicode icons).
+        - Data Split Ratio: Goal(Inform) -> Chart.js Donut Chart -> Justification(Standard and intuitive for showing part-to-whole proportions) -> Library(Chart.js/Canvas).
+        - Row Counts: Goal(Compare) -> Chart.js Bar Chart -> Justification(Clearly compares the absolute magnitude of the resulting train/eval datasets) -> Library(Chart.js/Canvas).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #1f2937; /* gray-800 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .kpi-value {
+            font-weight: 900;
+            color: #005f73;
+        }
+        .kpi-label {
+            font-weight: 600;
+            color: #0a9396;
+        }
+        .flow-arrow {
+            font-size: 2.5rem;
+            line-height: 1;
+            color: #94a3b8; /* slate-400 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            height: 100%;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto max-w-7xl p-4 md:p-8">
+
+        <header class="text-center my-8 md:my-16">
+            <h1 class="text-4xl md:text-6xl font-black text-[#005f73] tracking-tight">The Anatomy of Data Preparation</h1>
+            <p class="text-xl md:text-2xl text-[#0a9396] mt-2 font-semibold">An Interactive Guide to Building ML-Ready Datasets with BigQuery</p>
+        </header>
+
+        <nav class="sticky-nav bg-white/80 backdrop-blur-md rounded-lg shadow-md mb-12">
+            <ul class="flex justify-center items-center p-4 space-x-4 md:space-x-8 overflow-x-auto">
+                <li><a href="#mission" class="font-semibold text-gray-600 hover:text-[#005f73] transition-colors">The Mission</a></li>
+                <li><a href="#pipeline" class="font-semibold text-gray-600 hover:text-[#005f73] transition-colors">The Pipeline</a></li>
+                <li><a href="#concepts" class="font-semibold text-gray-600 hover:text-[#005f73] transition-colors">Core Concepts</a></li>
+                <li><a href="#verification" class="font-semibold text-gray-600 hover:text-[#005f73] transition-colors">Verification</a></li>
+            </ul>
+        </nav>
+
+        <main class="space-y-24">
+
+            <section id="mission">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-[#005f73]">The Mission: Predict a "Big Tip"</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+                        This application deconstructs a real-world machine learning task: preparing raw data to predict if a NYC taxi ride will result in a generous tip (≥20%). Before any model can be trained, data must be sourced, cleaned, and transformed. We'll explore how this is done efficiently and reproducibly using cloud tools.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="card">
+                        <p class="kpi-value text-5xl">15 GB</p>
+                        <p class="kpi-label text-xl">Data Scanned</p>
+                        <p class="text-gray-500 mt-2">The initial query sifts through a massive public dataset, demonstrating the power of cloud-scale processing.</p>
+                    </div>
+                    <div class="card">
+                        <p class="kpi-value text-5xl">~37M</p>
+                        <p class="kpi-label text-xl">Total Trips</p>
+                        <p class="text-gray-500 mt-2">The number of 2022 taxi rides analyzed, pruned, and prepared for the machine learning model.</p>
+                    </div>
+                    <div class="card">
+                        <p class="kpi-value text-5xl">4</p>
+                        <p class="kpi-label text-xl">Engineered Features</p>
+                        <p class="text-gray-500 mt-2">New, model-friendly columns created from raw data to improve predictive power.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pipeline">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-[#005f73]">The Data Preparation Pipeline</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+                       A successful ML project relies on a well-defined, automated pipeline. This diagram shows the journey from a vast public dataset to the final, verified tables our model will use. Each step is a programmatic query, ensuring the process is documented and repeatable.
+                    </p>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-2">
+                    <div class="w-full md:w-1/5 text-center p-4 bg-slate-100 border-2 border-slate-300 rounded-lg">
+                        <p class="font-bold text-xl text-slate-700">START</p>
+                        <p class="font-semibold text-lg text-slate-600">Raw Public Data</p>
+                        <p class="text-sm text-slate-500">NYC Taxi Trips</p>
+                    </div>
+                    <div class="flow-arrow transform md:rotate-0 rotate-90">→</div>
+                    <div class="w-full md:w-1/4 text-center p-4 bg-sky-100 border-2 border-sky-300 rounded-lg">
+                        <p class="font-bold text-xl text-sky-800">1. Clone & Prune</p>
+                        <p class="text-md text-slate-600">Select only 2022 trips and necessary columns.</p>
+                    </div>
+                    <div class="flow-arrow transform md:rotate-0 rotate-90">→</div>
+                    <div class="w-full md:w-1/4 text-center p-4 bg-teal-100 border-2 border-teal-300 rounded-lg">
+                        <p class="font-bold text-xl text-teal-800">2. Engineer Features</p>
+                        <p class="text-md text-slate-600">Create new, informative columns like `tip_percent`.</p>
+                    </div>
+                    <div class="flow-arrow transform md:rotate-0 rotate-90">→</div>
+                    <div class="w-full md:w-1/4 text-center p-4 bg-amber-100 border-2 border-amber-300 rounded-lg">
+                        <p class="font-bold text-xl text-amber-800">3. Deterministic Split</p>
+                        <p class="text-md text-slate-600">Split into 80% Train / 20% Eval sets reproducibly.</p>
+                    </div>
+                     <div class="flow-arrow transform md:rotate-0 rotate-90">→</div>
+                    <div class="w-full md:w-1/5 text-center p-4 bg-emerald-100 border-2 border-emerald-300 rounded-lg">
+                        <p class="font-bold text-xl text-emerald-800">END</p>
+                        <p class="font-semibold text-lg text-emerald-700">ML-Ready Tables</p>
+                        <p class="text-sm text-slate-500">Verified & Ready</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="concepts">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-[#005f73]">Core Concepts in Data Preparation</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+                        This section explores the crucial "why" behind the pipeline steps. Understanding these concepts separates a script-runner from a true data scientist. Explore each card to see how raw data is transformed into valuable intelligence.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="lg:col-span-2 card">
+                        <h3 class="text-2xl font-bold text-[#005f73] mb-4">Feature Engineering: Creating Signal from Noise</h3>
+                        <p class="text-gray-600 mb-6">Feature engineering is the art of using domain knowledge to create new input variables (features) that help models learn better. Instead of feeding a model raw, unprocessed data, we create features that are more directly related to the problem we're trying to solve.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-slate-50 p-4 rounded-lg border">
+                                <h4 class="font-bold text-lg text-slate-700">BEFORE (Raw Data)</h4>
+                                <ul class="list-disc list-inside mt-2 text-slate-600">
+                                    <li>`pickup_datetime`</li>
+                                    <li>`dropoff_datetime`</li>
+                                    <li>`trip_distance` (in miles)</li>
+                                    <li>`tip_amount`</li>
+                                    <li>`fare_amount`</li>
+                                </ul>
+                            </div>
+                            <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-300">
+                                <h4 class="font-bold text-lg text-emerald-800">AFTER (Engineered Features)</h4>
+                                <ul class="list-disc list-inside mt-2 text-emerald-700">
+                                    <li>`trip_minutes` (more direct)</li>
+                                    <li>`trip_km` (standardized unit)</li>
+                                    <li>`tip_percent` (normalized)</li>
+                                    <li class="font-bold">`is_big_tip` (the target label)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-4 border-rose-400">
+                        <h3 class="text-2xl font-bold text-rose-800 mb-2">❌ The Reproducibility Pitfall: `RAND()`</h3>
+                        <p class="text-gray-600 mb-4">Using a random function like `RAND()` to split data is a common but severe mistake. It's **non-deterministic**; it generates a different split every time the query runs.</p>
+                        <div class="text-center p-4 bg-rose-50 rounded-lg mt-4">
+                            <p class="font-bold text-lg text-rose-700">The Consequence: Unreliable Experiments</p>
+                            <p class="text-gray-600">You can't reliably compare Model A to Model B. If Model B performs better, is it because the model is truly superior, or did it just get an "easier" set of training data by chance? You can never be sure. Your results are not scientifically valid.</p>
+                        </div>
+                    </div>
+                    <div class="card border-4 border-teal-400">
+                        <h3 class="text-2xl font-bold text-teal-800 mb-2">✅ The Professional Standard: `FARM_FINGERPRINT`</h3>
+                        <p class="text-gray-600 mb-4">A hashing function like `FARM_FINGERPRINT` is **deterministic**. For the same input (like a unique trip ID), it *always* produces the same numerical output.</p>
+                        <div class="text-center p-4 bg-teal-50 rounded-lg mt-4">
+                            <p class="font-bold text-lg text-teal-700">The Consequence: Trustworthy Science</p>
+                            <p class="text-gray-600">By using the modulo of this consistent hash, we ensure every row is assigned to the exact same split (train or eval) every single time. This guarantees that your experiments are fair, comparable, and reproducible—a cornerstone of professional ML engineering.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="verification">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-[#005f73]">Trust, But Verify Programmatically</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+                        The final step in our automated pipeline isn't a manual check in a UI. It's another query. We programmatically verify that our data splits were created correctly, ensuring the pipeline's integrity without human intervention. These charts show the results of that verification.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="card">
+                        <h3 class="text-center font-bold text-xl text-[#005f73] mb-4">Data Split Ratio (80/20)</h3>
+                        <div class="chart-container">
+                            <canvas id="splitDonutChart"></canvas>
+                        </div>
+                         <p class="text-center text-sm text-slate-500 mt-4">Confirms the relative proportion of the training and evaluation datasets.</p>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-center font-bold text-xl text-[#005f73] mb-4">Verified Row Counts</h3>
+                        <div class="chart-container">
+                            <canvas id="splitBarChart"></canvas>
+                        </div>
+                        <p class="text-center text-sm text-slate-500 mt-4">Confirms the absolute number of rows in each final table.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center mt-24 py-8 border-t border-slate-200">
+            <p class="text-slate-500">An Interactive Application by Gemini</p>
+            <p class="text-sm text-slate-400 mt-1">Based on the "ML Data Preparation in the Cloud" Lab Guide.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tooltipTitleCallback = (tooltipItems) => {
+                const item = tooltipItems[0];
+                let label = item.chart.data.labels[item.dataIndex];
+                if (Array.isArray(label)) {
+                  return label.join(' ');
+                }
+                return label;
+            };
+            
+            const oceanicSlate = {
+                darkTeal: '#005f73',
+                mediumTeal: '#0a9396',
+                lightTeal: '#94d2bd',
+                paleGold: '#e9d8a6',
+                goldOrange: '#ee9b00'
+            };
+
+            const donutCtx = document.getElementById('splitDonutChart').getContext('2d');
+            new Chart(donutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Training Set', 'Evaluation Set'],
+                    datasets: [{
+                        label: 'Data Split',
+                        data: [80, 20],
+                        backgroundColor: [oceanicSlate.mediumTeal, oceanicSlate.paleGold],
+                        borderColor: ['#f8fafc'],
+                        borderWidth: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Inter' } } },
+                        tooltip: { callbacks: { title: tooltipTitleCallback } }
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            const barCtx = document.getElementById('splitBarChart').getContext('2d');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Training Set (80%)', 'Evaluation Set (20%)'],
+                    datasets: [{
+                        label: 'Row Count',
+                        data: [29536519, 7385206],
+                        backgroundColor: [oceanicSlate.mediumTeal, oceanicSlate.paleGold],
+                        borderColor: [oceanicSlate.darkTeal, oceanicSlate.goldOrange],
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { title: tooltipTitleCallback } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (this.getLabelForValue(value) / 1e6) + 'M';
+                                },
+                                font: { family: 'Inter' }
+                            }
+                        },
+                        x: { ticks: { font: { family: 'Inter' } } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
